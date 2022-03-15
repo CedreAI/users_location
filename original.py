@@ -16,7 +16,7 @@ df_original["DATE"] = date
 from dash import Dash, html, Input, Output, dcc
 
 
-app = Dash(title = "map", external_stylesheets = ["css/font.css"])
+app = Dash(title = "map")
 
 # slicer
 dic = {}
@@ -73,7 +73,7 @@ def map(value):
         hover_name = "NAME",
         hover_data = ["CITY"],
         zoom = 3,
-        title = "موقعیت",
+        title = "location",
         animation_frame = "date time",
         height = 800,
     )
