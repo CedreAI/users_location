@@ -7,10 +7,6 @@ __pycache__/
 *.so
 
 # Distribution / packaging
-pandas
-plotly
-dash
-persiantools
 .Python
 build/
 develop-eggs/
