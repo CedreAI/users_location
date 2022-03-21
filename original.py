@@ -1,57 +1,139 @@
+# libraries
 import pandas
 import plotly.express as px
-from persiantools.jdatetime import JalaliDate as jd
-
-# data bise
-df_original = pandas.read_csv("database/visitors.tsv", sep = "\t")
-date = []
-for i in df_original["DATE"]:
-    date.append(jd.to_jalali(int(i.split("-")[0]), int(i.split("-")[1]), int(i.split("-")[2])))
-
-df_original["DATE"] = date
-
-
-
-# dash
 from dash import Dash, html, Input, Output, dcc
+from persiantools.jdatetime import JalaliDate
+from random import randint
 
+# database
+global_df = pandas.read_csv("visitor.tsv", "\t")
 
-app = Dash(title = "map")
-
-# slicer
+# set mor date to database
+#         #
+#      #  #  # 
+#       # # #
+#         #
+#
+# 1:    Convert AD to glory
+date = []
+for i in global_df["DATE"]:
+    date.append(JalaliDate.to_jalali(int(i.split("-")[0]), int(i.split("-")[1]), int(i.split("-")[2])))
+global_df["DATE"] = date
+#        @
+# 2:    Determine the day and date
+dh = []
+for i in global_df["DATE TIME LOGIN"]:
+    dh.append(JalaliDate.to_jalali(int(i.split(" ")[0].split("-")[0]), int(i.split(" ")[0].split("-")[1]), int(i.split(" ")[0].split("-")[2])).isoformat() + " " + i.split(" ")[1].split(":")[0] + ":00")
+global_df["DATE TIME"] = dh
+#         @
+# 3:    To specify a server for each user at random
+servers = ["quranic.network", "ebad.quranic.network", "motaghin.quranic.network"]
+s_l = []
+for i in global_df["IP"]:
+    s_l.append(servers[randint(0, 2)])
+global_df["SERVER"] = s_l
+#         @
+# 4:    Set login number
+val_log = []
+for i in global_df["IP"]:
+    val_log.append(1)
+global_df["LOGIN NUMBER"] = val_log
+#
+# set copy datebase
+original_df = pandas.DataFrame()
+original_df = global_df
+#
+#
+#   #    #  ######  #        #  #########
+#   ##   #  #         #   #         #    
+#   # #  #  ######      #           #    
+#   #  # #  #         #   #         #    
+#   #    #  ######  #        #      #    
+#
+#
+#  #       ######  #       #  ######  #     
+#  #       #        #     #   #       #     
+#  #       ######    #   #    ######  #     
+#  #       #          # #     #       #     
+#  ######  ######      #      ######  ######
+#
+#
+# set figurs
+#         #
+#      #  #  # 
+#       # # #
+#         #
+#
+# 1:    set map figures
+map_fig = px.scatter_mapbox(
+    data_frame = original_df,
+    lat = "LAT",
+    lon = "LON",
+    mapbox_style = "open-street-map",
+    color_discrete_sequence = ["#48D1CC"],
+    hover_name = "NAME",
+    hover_data = ["CITY"],
+    zoom = 3,
+    title = "locations",
+    animation_frame = "DATE TIME",
+    height = 800,
+)
+#         @
+# 2:    set histogram figur
+his_fig = px.histogram(
+    data_frame = original_df,
+    x = "DATE TIME",
+    y = "LOGIN NUMBER",
+    title = "login time",
+)
+his_fig.update_xaxes(
+    rangeslider_visible = True,
+    rangeselector = dict(
+        buttons = list([
+            dict(label = "1d", step = "day"),
+            dict(label = "all", step = "all")
+        ])
+    ),
+)
+#
+#
+#   #    #  ######  #        #  #########
+#   ##   #  #         #   #         #    
+#   # #  #  ######      #           #    
+#   #  # #  #         #   #         #    
+#   #    #  ######  #        #      #    
+#
+#
+#  #       ######  #       #  ######  #     
+#  #       #        #     #   #       #     
+#  #       ######    #   #    ######  #     
+#  #       #          # #     #       #     
+#  ######  ######      #      ######  ######
+#
+#
+# work with dash
+app = Dash()
+# Set live components
+#         #
+#      #  #  # 
+#       # # #
+#         #
+#
+# 1:    Build a days-slicer and change the database with it and update the layouts
 dic = {}
-for i in df_original["DATE"]:
+for i in original_df["DATE"]:
     dic[i] = 0
-list_days = list(dic.keys())
-
-dic_day = {}
-n = -1
-for i in list_days:
-    n += 1
-    dic_day[n] = i
-
+days_list = list(dic.keys()) # We need the list of days in the days slicer
+# 1-1:    Output for map
 @app.callback(
-    Output("map_output", "children"),
-    [Input("slicer_input", "value")]
+    Output("output_map", "children"),
+    Input("input_slicer", "value")
 )
-def map(value):
-    values = list(dic_day.values())
+def map_update_layout(value):
+    values = days_list
     v_in = values[value[0]:value[1]+1]
-    df = pandas.read_csv("visitor.tsv", "\t")
-
-    date = []
-    for i in df["DATE"]:
-        date.append(jd.to_jalali(int(i.split("-")[0]), int(i.split("-")[1]), int(i.split("-")[2])))
-
-    df["DATE"] = date
-
-
-    dh = []
-    for i in df["DATE TIME LOGIN"]:
-        dh.append(jd.to_jalali(int(i.split(" ")[0].split("-")[0]), int(i.split(" ")[0].split("-")[1]), int(i.split(" ")[0].split("-")[2])).isoformat() + " " + i.split(" ")[1].split(":")[0] + ":00")
-    df["date time"] = dh
-    
-
+    df = pandas.DataFrame()
+    df = global_df
     df2 = pandas.DataFrame()
     a = 0
     for i in v_in:
@@ -60,108 +142,16 @@ def map(value):
             a += 1
         else:
             df2 = pandas.concat([df2, df.loc[df["DATE"] == i]])
-    df_original = df2
-    
-
-    # map
-    fig_map = px.scatter_mapbox(
-        data_frame = df_original,
-        lat = "LAT",
-        lon = "LON",
-        mapbox_style = "open-street-map",
-        color_discrete_sequence = ["#48D1CC"],
-        hover_name = "NAME",
-        hover_data = ["CITY"],
-        zoom = 3,
-        title = "location",
-        animation_frame = "date time",
-        height = 800,
-    )
-
-    
-    return [dcc.Graph(figure = fig_map)]
+    original_df = df2
+    map_fig.update_layout(data_frame = original_df,) # This line gives an error; Due to "data_frame = original_df"
+    return [dcc.Graph(figure = map_fig)]
 
 
-@app.callback(
-    Output("output", "children"),
-    [Input("slicer_input", "value")]
-)
-def output(value):
-    values = list(dic_day.values())
-    v_in = values[value[0]:value[1]+1]
-    return f"[{v_in[0]}, {v_in[-1]}]"
-
-@app.callback(
-    Output("histogram_output", "children"),
-    [Input("slicer_input", "value")]
-)
-def histogram(value):
-    values = list(dic_day.values())
-    v_in = values[value[0]:value[1]+1]
-    df = pandas.read_csv("visitor.tsv", "\t")
-
-    date = []
-    for i in df["DATE"]:
-        date.append(jd.to_jalali(int(i.split("-")[0]), int(i.split("-")[1]), int(i.split("-")[2])))
-
-    df["DATE"] = date
-
-
-    dh = []
-    for i in df["DATE TIME LOGIN"]:
-        dh.append(jd.to_jalali(int(i.split(" ")[0].split("-")[0]), int(i.split(" ")[0].split("-")[1]), int(i.split(" ")[0].split("-")[2])).isoformat() + " " + i.split(" ")[1].split(":")[0] + ":00")
-    df["date time"] = dh
-    
-
-    df2 = pandas.DataFrame()
-    a = 0
-    for i in v_in:
-        if a == 0:
-            df2 = df.loc[df["DATE"] == i]
-            a += 1
-        else:
-            df2 = pandas.concat([df2, df.loc[df["DATE"] == i]])
-    df_original = df2
-
-    # histogram
-
-    val_log = []
-    for i in df_original["date time"]:
-        val_log.append(1)#values[n])
-
-
-    df_original["login"] = val_log
-
-    fig_his = px.histogram(
-        data_frame = df_original,
-        x = "date time",
-        y = "login",
-        title = "login time",
-    )
-    fig_his.update_xaxes(
-        rangeslider_visible = True,
-        rangeselector = dict(
-            buttons = list([
-                dict(label = "1d", step = "day"),
-                dict(label = "all", step = "all")
-            ])
-        ),
-    )
-    return [dcc.Graph(figure = fig_his)]
-
-
-
-
-
-
-# layout
 
 app.layout = html.Div([
-    html.Div(id = "map_output"),
-    html.P(id = "output", style = {"family-font":"SENS"}),
-    html.Div([dcc.RangeSlider(0, len(list(dic_day.values()))-1, 1, marks = None, value = [len(list(dic.values()))-2, len(list(dic.values()))-1], id = "slicer_input"),]),
-    html.Div(id = "histogram_output")
-])
+    html.Div(id = "output_map"),
+    # html.Div([dcc.RangeSlider(0, len(list_days)-1, 1, marks = None, value = [len(list_days)-2, len(list_days)-1], id = "input_slicer")]),
+    dcc.RangeSlider(0, len(days_list)-1, 1, None, [len(days_list)-2, len(days_list)-1], id = "input_slicer")
+    ])
 
-import os
-app.run_server(host = os.getenv("HOST", "127.0.0.1"), port = os.getenv("PORT", "8453"), debug = True)
+app.run_server(debug = True)
