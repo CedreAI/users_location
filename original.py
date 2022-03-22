@@ -72,12 +72,21 @@ dic = {}
 for i in original_df["DATE"]:
     dic[i] = 0
 days_list = list(dic.keys()) # We need the list of days in the days slicer
-# >>>   Output for days-slicer and update database
+# >>>   Output for days-slicer
 @app.callback(
     Output("output_slicer", "children"),
     Input("input_slicer", "value")
 )
-def map_update_layout(value):
+def output_slicer(value):
+    values = days_list
+    v_in = values[value[0]:value[1]+1]
+    return f"[{v_in[0]}, {v_in[-1]}]"
+# >>>   update database adn return select_server function
+@app.callback(
+    Output("return_select_server", "children"),
+    Input("input_slicer", "value")
+)
+def return_select_server(value):
     global original_df
     values = days_list
     v_in = values[value[0]:value[1]+1]
@@ -92,7 +101,7 @@ def map_update_layout(value):
         else:
             df2 = pandas.concat([df2, df.loc[df["DATE"] == i]])
     original_df = df2
-    return f"[{v_in[0]}, {v_in[-1]}]"
+    return [dcc.RadioItems(id = "select_server", options = ["all", "quranic", "ebad", "motaghin"], value = "all")]
 # 2:    Create a field to specify the server and update the database and specify figures 
 # >>>   This requires several steps that have been identified
 #         #
@@ -179,7 +188,7 @@ def select_server_for_histogram(value):
 #
 # Build app layout and runserver
 app.layout = html.Div([
-    dcc.RadioItems(id = "select_server", options = ["all", "quranic", "ebad", "motaghin"], value = "all"),
+    html.Div(id = "return_select_server"),
     dcc.Graph(id = "output_map"),
     html.P(id = "output_slicer"),
     dcc.RangeSlider(0, len(days_list)-1, 1, None, [len(days_list)-2, len(days_list)-1], id = "input_slicer"),
