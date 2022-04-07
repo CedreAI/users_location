@@ -82,11 +82,13 @@ def output_slicer(value):
     v_in = values[value[0]:value[1]+1]
     return f"[{v_in[0]}, {v_in[-1]}]"
 # >>>   update database adn return select_server function
+server = "all" # This component is required to keep up with server changes and is "all" by default
 @app.callback(
     Output("return_select_server", "children"),
     Input("input_slicer", "value")
 )
 def return_select_server(value):
+    global server
     global original_df
     values = days_list
     v_in = values[value[0]:value[1]+1]
@@ -101,7 +103,7 @@ def return_select_server(value):
         else:
             df2 = pandas.concat([df2, df.loc[df["DATE"] == i]])
     original_df = df2
-    return [dcc.RadioItems(id = "select_server", options = ["all", "quranic", "ebad", "motaghin"], value = "all")]
+    return [dcc.RadioItems(id = "select_server", options = ["all", "quranic", "ebad", "motaghin"], value = server)]
 # 2:    Create a field to specify the server and update the database and specify figures 
 # >>>   This requires several steps that have been identified
 #         #
@@ -115,6 +117,9 @@ def return_select_server(value):
     Input("select_server", "value")
 )
 def select_server_for_map(value):
+    global server
+    server = value # To keep the server address after the change
+    global original_df
     df = original_df
     map_df = pandas.DataFrame()
     if value == "motaghin":
